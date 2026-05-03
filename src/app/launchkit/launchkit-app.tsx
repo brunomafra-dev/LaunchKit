@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Product = {
@@ -65,12 +66,22 @@ type LibraryItem = {
   content: GeneratedContent;
 };
 
+type AiImage = {
+  id: string;
+  prompt: string;
+  src: string;
+  createdAt: string;
+};
+
 const channels = ["Instagram", "TikTok", "YouTube Shorts", "Pinterest", "Threads"];
 const formats = ["Reel", "Carrossel", "Story", "Post estatico", "Roteiro UGC", "Ideia de video"];
 const goals = ["download", "cadastro", "educacao", "prova social", "retencao", "viralizacao"];
 const styles = ["chef testando", "antes/depois", "problema/solucao", "tutorial", "lista", "humor leve", "comparacao"];
 const durations = ["15s", "30s", "45s"];
 const statuses: LibraryItem["status"][] = ["ideia", "em producao", "postado", "descartado"];
+const imageStyles = ["App ad premium", "Foto realista", "Editorial social", "UGC polido", "Mockup de app", "Personagem/ilustracao"];
+const imageSizes = ["1024x1536", "1024x1024", "1536x1024"] as const;
+const imageQualities = ["medium", "low", "high"] as const;
 const controlClass = "min-h-11 rounded-md border border-stone-200 bg-white/90 px-3 text-sm text-slate-950 shadow-sm outline-none ring-teal-500/20 focus:border-teal-500 focus:ring-4";
 const primaryButtonClass = "rounded-md bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-950/15 hover:bg-slate-800";
 const accentButtonClass = "rounded-md bg-teal-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700";
@@ -438,6 +449,13 @@ export function LaunchKitApp() {
   const [slideCount, setSlideCount] = useState(7);
   const [themeId, setThemeId] = useState<ThemeId>("clean");
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [aiPrompt, setAiPrompt] = useState("Foto vertical premium de uma pessoa usando o app no celular, com espaco limpo para texto e clima de campanha organica.");
+  const [aiStyle, setAiStyle] = useState(imageStyles[0]);
+  const [aiSize, setAiSize] = useState<(typeof imageSizes)[number]>("1024x1536");
+  const [aiQuality, setAiQuality] = useState<(typeof imageQualities)[number]>("medium");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiImages, setAiImages] = useState<AiImage[]>([]);
   const previewCanvas = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => window.localStorage.setItem(storageKeys.products, JSON.stringify(products)), [products]);
@@ -512,15 +530,54 @@ export function LaunchKitApp() {
     navigator.clipboard.writeText(`${pack.caption}\n\n${pack.hashtags.join(" ")}\n\nCTA: ${pack.cta}`);
   }
 
+  async function generateAiImage() {
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const response = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          product: carouselProduct.name,
+          format: campaignInput.format,
+          style: aiStyle,
+          size: aiSize,
+          quality: aiQuality,
+        }),
+      });
+      const data = (await response.json()) as { image?: string; mimeType?: string; error?: string };
+      if (!response.ok || !data.image) throw new Error(data.error ?? "Falha ao gerar imagem.");
+      setAiImages((current) => [{
+        id: crypto.randomUUID(),
+        prompt: aiPrompt,
+        src: `data:${data.mimeType ?? "image/png"};base64,${data.image}`,
+        createdAt: new Date().toLocaleString("pt-BR"),
+      }, ...current]);
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "Falha ao gerar imagem.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function downloadAiImage(image: AiImage) {
+    const a = document.createElement("a");
+    a.href = image.src;
+    a.download = `launchkit-ai-${image.id}.png`;
+    a.click();
+  }
+
   const nav = [
     ["Dashboard", "01"],
     ["Gerar conteudo", "02"],
     ["Carrossel", "03"],
-    ["Publicar", "04"],
-    ["Biblioteca", "05"],
-    ["Calendario", "06"],
-    ["Produtos", "07"],
-    ["Configuracoes", "08"],
+    ["AI Studio", "04"],
+    ["Publicar", "05"],
+    ["Biblioteca", "06"],
+    ["Calendario", "07"],
+    ["Produtos", "08"],
+    ["Configuracoes", "09"],
   ];
 
   return (
@@ -657,6 +714,25 @@ export function LaunchKitApp() {
               </div>
             )}
 
+            {active === "AI Studio" && (
+              <AIStudio
+                product={carouselProduct}
+                prompt={aiPrompt}
+                setPrompt={setAiPrompt}
+                style={aiStyle}
+                setStyle={setAiStyle}
+                size={aiSize}
+                setSize={setAiSize}
+                quality={aiQuality}
+                setQuality={setAiQuality}
+                loading={aiLoading}
+                error={aiError}
+                images={aiImages}
+                onGenerate={generateAiImage}
+                onDownload={downloadAiImage}
+              />
+            )}
+
             {active === "Publicar" && (
               <PublishHub
                 generated={generated}
@@ -737,6 +813,114 @@ function GeneratedView({ generated, onSave, onOpenCarousel }: { generated: Gener
         <button onClick={onOpenCarousel} className={primaryButtonClass}>Editar carrossel gerado</button>
         <a href="https://www.canva.com/" target="_blank" className={secondaryButtonClass}>Abrir Canva</a>
         <a href="https://www.capcut.com/" target="_blank" className={secondaryButtonClass}>Abrir CapCut</a>
+      </div>
+    </div>
+  );
+}
+
+function AIStudio({
+  product,
+  prompt,
+  setPrompt,
+  style,
+  setStyle,
+  size,
+  setSize,
+  quality,
+  setQuality,
+  loading,
+  error,
+  images,
+  onGenerate,
+  onDownload,
+}: {
+  product: Product;
+  prompt: string;
+  setPrompt: (value: string) => void;
+  style: string;
+  setStyle: (value: string) => void;
+  size: (typeof imageSizes)[number];
+  setSize: (value: (typeof imageSizes)[number]) => void;
+  quality: (typeof imageQualities)[number];
+  setQuality: (value: (typeof imageQualities)[number]) => void;
+  loading: boolean;
+  error: string;
+  images: AiImage[];
+  onGenerate: () => void;
+  onDownload: (image: AiImage) => void;
+}) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
+      <section className="rounded-md border border-slate-950/10 bg-slate-950 p-5 text-white shadow-2xl shadow-slate-950/15">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-300">GPT Images</p>
+        <h3 className="mt-3 text-3xl font-black leading-tight tracking-tight">Seu gerador visual dentro do LaunchKit.</h3>
+        <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">
+          Gere fotos, cenas de produto, fundos, mockups e assets sociais usando sua propria chave da OpenAI no servidor.
+        </p>
+        <div className="mt-6 grid gap-4">
+          <Field label="Direcao criativa">
+            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} className={`${controlClass} min-h-36 py-3 text-base leading-6`} />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Estilo">
+              <SelectField value={style} onChange={setStyle} options={imageStyles} />
+            </Field>
+            <Field label="Tamanho">
+              <select value={size} onChange={(event) => setSize(event.target.value as (typeof imageSizes)[number])} className={controlClass}>
+                {imageSizes.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </Field>
+            <Field label="Qualidade">
+              <select value={quality} onChange={(event) => setQuality(event.target.value as (typeof imageQualities)[number])} className={controlClass}>
+                {imageQualities.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="rounded-md border border-white/10 bg-white/10 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">Contexto usado</p>
+            <p className="mt-2 text-sm font-bold text-white">{product.name}</p>
+            <p className="mt-1 text-sm leading-5 text-slate-300">{product.description}</p>
+          </div>
+          {error ? <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm font-bold text-red-800">{error}</div> : null}
+          <button onClick={onGenerate} disabled={loading} className="rounded-md bg-teal-400 px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-teal-400/20 hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60">
+            {loading ? "Gerando imagem..." : "Gerar imagem premium"}
+          </button>
+        </div>
+      </section>
+
+      <div className="grid gap-5">
+        <section className="overflow-hidden rounded-md border border-white/80 bg-white/86 shadow-xl shadow-slate-950/[0.06] backdrop-blur">
+          <div className="border-b border-stone-200 px-5 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-teal-700">Moodboard gerado</p>
+            <h3 className="mt-1 text-xl font-black text-slate-950">Assets para campanhas e cards</h3>
+          </div>
+          {images.length ? (
+            <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+              {images.map((image) => (
+                <div key={image.id} className="group overflow-hidden rounded-md border border-stone-200 bg-stone-50 shadow-sm">
+                  <Image src={image.src} alt={image.prompt} width={1024} height={1536} unoptimized className="aspect-[2/3] w-full object-cover" />
+                  <div className="grid gap-3 p-3">
+                    <p className="line-clamp-3 text-xs font-semibold leading-5 text-slate-500">{image.prompt}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">{image.createdAt}</span>
+                      <button onClick={() => onDownload(image)} className="rounded-md bg-slate-950 px-3 py-2 text-xs font-black text-white">Baixar</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid min-h-[520px] place-items-center p-6">
+              <div className="max-w-md text-center">
+                <div className="mx-auto grid aspect-[2/3] w-56 place-items-center rounded-md border border-dashed border-stone-300 bg-stone-50 text-sm font-black text-slate-400 shadow-inner">
+                  Preview IA
+                </div>
+                <p className="mt-5 text-lg font-black text-slate-950">Nenhuma imagem gerada ainda.</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Configure sua `OPENAI_API_KEY` no ambiente e gere a primeira cena visual do LaunchKit.</p>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
