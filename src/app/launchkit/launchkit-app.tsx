@@ -66,10 +66,11 @@ type LibraryItem = {
   content: GeneratedContent;
 };
 
-type AiImage = {
+type PromptAsset = {
   id: string;
   prompt: string;
   src: string;
+  name: string;
   createdAt: string;
 };
 
@@ -79,13 +80,11 @@ const goals = ["download", "cadastro", "educacao", "prova social", "retencao", "
 const styles = ["chef testando", "antes/depois", "problema/solucao", "tutorial", "lista", "humor leve", "comparacao"];
 const durations = ["15s", "30s", "45s"];
 const statuses: LibraryItem["status"][] = ["ideia", "em producao", "postado", "descartado"];
-const imageStyles = ["App ad premium", "Foto realista", "Editorial social", "UGC polido", "Mockup de app", "Personagem/ilustracao"];
-const imageSizes = ["1024x1536", "1024x1024", "1536x1024"] as const;
-const imageQualities = ["medium", "low", "high"] as const;
-const controlClass = "min-h-11 rounded-md border border-stone-200 bg-white/90 px-3 text-sm text-slate-950 shadow-sm outline-none ring-teal-500/20 focus:border-teal-500 focus:ring-4";
+const promptStyles = ["Foto realista premium", "Editorial app cool", "UGC polido", "Mockup futurista", "Ilustracao 3D suave", "Poster social vibrante"];
+const controlClass = "min-h-11 rounded-md border border-violet-100 bg-white/90 px-3 text-sm text-slate-950 shadow-sm outline-none ring-fuchsia-500/15 focus:border-fuchsia-500 focus:ring-4";
 const primaryButtonClass = "rounded-md bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-950/15 hover:bg-slate-800";
-const accentButtonClass = "rounded-md bg-teal-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700";
-const secondaryButtonClass = "rounded-md border border-stone-200 bg-white/90 px-4 py-2.5 text-sm font-black text-slate-800 shadow-sm hover:border-slate-300 hover:bg-white";
+const accentButtonClass = "rounded-md bg-fuchsia-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-fuchsia-600/20 hover:bg-fuchsia-700";
+const secondaryButtonClass = "rounded-md border border-violet-100 bg-white/90 px-4 py-2.5 text-sm font-black text-slate-800 shadow-sm hover:border-fuchsia-200 hover:bg-white";
 
 const themes: Record<ThemeId, { name: string; bg: string; fg: string; muted: string; accent: string; soft: string }> = {
   clean: { name: "Clean SaaS", bg: "#f8fafc", fg: "#0f172a", muted: "#475569", accent: "#059669", soft: "#d1fae5" },
@@ -220,6 +219,23 @@ function downloadText(filename: string, value: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function createImagePrompt(product: Product, slide: CarouselSlide, brief: string, style: string, index: number) {
+  return [
+    `Crie a imagem ${index + 1} de um carrossel organico para ${product.name}.`,
+    `Produto: ${product.description}`,
+    `Publico: ${product.audience}`,
+    `Estilo visual: ${style}.`,
+    `Direcao base: ${brief}`,
+    `Slide: ${slide.title}`,
+    `Mensagem do slide: ${slide.text}`,
+    `Visual desejado: ${slide.visual}`,
+    "Formato vertical 4:5 ou 9:16, com composicao premium, moderna, cool e limpa.",
+    "Deixe area livre para texto grande e evite textos pequenos dentro da imagem.",
+    "Nao invente depoimentos, logos de plataformas, app store badges ou promessas falsas.",
+    "Priorize cena bonita, produto percebido, contraste bom e espaco para overlay no LaunchKit.",
+  ].join("\n");
 }
 
 function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -449,13 +465,9 @@ export function LaunchKitApp() {
   const [slideCount, setSlideCount] = useState(7);
   const [themeId, setThemeId] = useState<ThemeId>("clean");
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
-  const [aiPrompt, setAiPrompt] = useState("Foto vertical premium de uma pessoa usando o app no celular, com espaco limpo para texto e clima de campanha organica.");
-  const [aiStyle, setAiStyle] = useState(imageStyles[0]);
-  const [aiSize, setAiSize] = useState<(typeof imageSizes)[number]>("1024x1536");
-  const [aiQuality, setAiQuality] = useState<(typeof imageQualities)[number]>("medium");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
-  const [aiImages, setAiImages] = useState<AiImage[]>([]);
+  const [promptBrief, setPromptBrief] = useState("Imagem vertical premium para post organico, com cena real de uso do app no celular, espaco limpo para copy e visual gostoso de olhar.");
+  const [promptStyle, setPromptStyle] = useState(promptStyles[0]);
+  const [importedAssets, setImportedAssets] = useState<PromptAsset[]>([]);
   const previewCanvas = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => window.localStorage.setItem(storageKeys.products, JSON.stringify(products)), [products]);
@@ -464,6 +476,8 @@ export function LaunchKitApp() {
   const product = products.find((item) => item.id === campaignInput.productId) ?? products[0];
   const carouselProduct = products.find((item) => item.id === carouselProductId) ?? products[0];
   const firstSlide = slides[0];
+  const promptSlides = useMemo(() => slides.length ? slides : createCarousel(carouselProduct, carouselGoal, slideCount), [slides, carouselProduct, carouselGoal, slideCount]);
+  const imagePrompts = useMemo(() => promptSlides.map((slide, index) => createImagePrompt(carouselProduct, slide, promptBrief, promptStyle, index)), [promptSlides, carouselProduct, promptBrief, promptStyle]);
 
   useEffect(() => {
     if (firstSlide && previewCanvas.current) drawSlideToCanvas(previewCanvas.current, firstSlide, carouselProduct, themeId, 0);
@@ -530,41 +544,32 @@ export function LaunchKitApp() {
     navigator.clipboard.writeText(`${pack.caption}\n\n${pack.hashtags.join(" ")}\n\nCTA: ${pack.cta}`);
   }
 
-  async function generateAiImage() {
-    setAiLoading(true);
-    setAiError("");
-    try {
-      const response = await fetch("/api/images/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: aiPrompt,
-          product: carouselProduct.name,
-          format: campaignInput.format,
-          style: aiStyle,
-          size: aiSize,
-          quality: aiQuality,
-        }),
-      });
-      const data = (await response.json()) as { image?: string; mimeType?: string; error?: string };
-      if (!response.ok || !data.image) throw new Error(data.error ?? "Falha ao gerar imagem.");
-      setAiImages((current) => [{
-        id: crypto.randomUUID(),
-        prompt: aiPrompt,
-        src: `data:${data.mimeType ?? "image/png"};base64,${data.image}`,
-        createdAt: new Date().toLocaleString("pt-BR"),
-      }, ...current]);
-    } catch (error) {
-      setAiError(error instanceof Error ? error.message : "Falha ao gerar imagem.");
-    } finally {
-      setAiLoading(false);
-    }
+  function copyAllImagePrompts() {
+    navigator.clipboard.writeText(imagePrompts.map((prompt, index) => `Imagem ${index + 1}\n${prompt}`).join("\n\n---\n\n"));
   }
 
-  function downloadAiImage(image: AiImage) {
+  async function importPromptAssets(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/"));
+    const loaded = await Promise.all(files.map((file) => new Promise<PromptAsset>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        id: crypto.randomUUID(),
+        prompt: promptBrief,
+        src: String(reader.result),
+        name: file.name,
+        createdAt: new Date().toLocaleString("pt-BR"),
+      });
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    })));
+    setImportedAssets((current) => [...loaded, ...current]);
+    event.target.value = "";
+  }
+
+  function downloadPromptAsset(image: PromptAsset) {
     const a = document.createElement("a");
     a.href = image.src;
-    a.download = `launchkit-ai-${image.id}.png`;
+    a.download = image.name || `launchkit-prompt-asset-${image.id}.png`;
     a.click();
   }
 
@@ -572,7 +577,7 @@ export function LaunchKitApp() {
     ["Dashboard", "01"],
     ["Gerar conteudo", "02"],
     ["Carrossel", "03"],
-    ["AI Studio", "04"],
+    ["Prompt Studio", "04"],
     ["Publicar", "05"],
     ["Biblioteca", "06"],
     ["Calendario", "07"],
@@ -583,31 +588,31 @@ export function LaunchKitApp() {
   return (
     <main className="min-h-dvh text-slate-950">
       <div className="flex min-h-dvh">
-        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/72 px-5 py-6 shadow-2xl shadow-slate-950/5 backdrop-blur-xl lg:block">
-          <div className="rounded-md border border-slate-950/10 bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/20">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-teal-300">Mafra Labs</p>
+        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/68 px-5 py-6 shadow-2xl shadow-violet-950/10 backdrop-blur-xl lg:block">
+          <div className="rounded-md border border-white/10 bg-[linear-gradient(135deg,#111827_0%,#4c1d95_52%,#c026d3_100%)] p-4 text-white shadow-xl shadow-fuchsia-900/20">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-300">Mafra Labs</p>
             <h1 className="mt-2 font-sans text-2xl font-black leading-tight">LaunchKit Growth</h1>
             <p className="mt-3 text-sm font-semibold leading-5 text-slate-300">Studio interno para transformar ideias em campanhas, cards e pacotes de publicacao.</p>
           </div>
           <nav className="mt-6 grid gap-2">
             {nav.map(([item, index]) => (
               <button key={item} onClick={() => setActive(item)} className={`group flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-black ${active === item ? "bg-slate-950 text-white shadow-lg shadow-slate-950/15" : "text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm"}`}>
-                <span className={`grid h-8 w-8 place-items-center rounded-md text-[11px] ${active === item ? "bg-teal-400 text-slate-950" : "bg-stone-100 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-700"}`}>{index}</span>
+                <span className={`grid h-8 w-8 place-items-center rounded-md text-[11px] ${active === item ? "bg-fuchsia-400 text-slate-950" : "bg-violet-50 text-slate-400 group-hover:bg-fuchsia-50 group-hover:text-fuchsia-700"}`}>{index}</span>
                 <span>{item}</span>
               </button>
             ))}
           </nav>
-          <div className="mt-6 rounded-md border border-teal-200 bg-teal-50 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-teal-700">MVP atual</p>
+          <div className="mt-6 rounded-md border border-fuchsia-200 bg-fuchsia-50 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-fuchsia-700">MVP atual</p>
             <p className="mt-2 text-sm font-bold leading-5 text-slate-700">Persistencia local, export PNG e publicacao assistida sem promessa falsa de API social.</p>
           </div>
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-10 border-b border-white/70 bg-white/72 px-4 py-4 shadow-sm shadow-slate-950/5 backdrop-blur-xl lg:px-8">
+          <header className="sticky top-0 z-10 border-b border-white/70 bg-white/72 px-4 py-4 shadow-sm shadow-violet-950/5 backdrop-blur-xl lg:px-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-700">Ferramenta interna de crescimento organico</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-fuchsia-700">Ferramenta interna de crescimento organico</p>
                 <h2 className="mt-1 font-sans text-3xl font-black tracking-tight">{active}</h2>
               </div>
               <div className="flex gap-2">
@@ -624,18 +629,18 @@ export function LaunchKitApp() {
             {active === "Dashboard" && (
               <>
                 <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-                  <section className="overflow-hidden rounded-md border border-slate-950/10 bg-slate-950 text-white shadow-2xl shadow-slate-950/15">
+                  <section className="overflow-hidden rounded-md border border-white/10 bg-[radial-gradient(circle_at_18%_10%,rgba(217,70,239,0.42),transparent_30%),linear-gradient(135deg,#0f172a_0%,#312e81_48%,#86198f_100%)] text-white shadow-2xl shadow-violet-950/20">
                     <div className="grid gap-6 p-6 md:grid-cols-[1fr_260px] md:p-8">
                       <div>
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-300">Growth studio</p>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-300">Growth studio</p>
                         <h3 className="mt-3 max-w-2xl text-4xl font-black leading-[0.95] tracking-tight md:text-5xl">Do briefing ao post pronto, sem planilha solta.</h3>
                         <p className="mt-4 max-w-xl text-base font-semibold leading-7 text-slate-300">Crie roteiros, carrosseis, pacotes de publicacao e um calendario simples para TemAi, SplitMate e proximos apps da Mafra Labs.</p>
                         <div className="mt-6 flex flex-wrap gap-2">
-                          <button onClick={generateCampaign} className="rounded-md bg-teal-400 px-4 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-400/20">Novo pacote</button>
+                          <button onClick={generateCampaign} className="rounded-md bg-fuchsia-400 px-4 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-fuchsia-400/20">Novo pacote</button>
                           <button onClick={() => setActive("Carrossel")} className="rounded-md border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-black text-white hover:bg-white/15">Abrir estudio</button>
                         </div>
                       </div>
-                      <div className="rounded-md border border-white/10 bg-white/10 p-4">
+                      <div className="rounded-md border border-white/10 bg-white/10 p-4 shadow-inner shadow-white/5">
                         <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">Fila de hoje</p>
                         <div className="mt-4 grid gap-3">
                           {products.map((item) => (
@@ -714,22 +719,18 @@ export function LaunchKitApp() {
               </div>
             )}
 
-            {active === "AI Studio" && (
-              <AIStudio
+            {active === "Prompt Studio" && (
+              <PromptStudio
                 product={carouselProduct}
-                prompt={aiPrompt}
-                setPrompt={setAiPrompt}
-                style={aiStyle}
-                setStyle={setAiStyle}
-                size={aiSize}
-                setSize={setAiSize}
-                quality={aiQuality}
-                setQuality={setAiQuality}
-                loading={aiLoading}
-                error={aiError}
-                images={aiImages}
-                onGenerate={generateAiImage}
-                onDownload={downloadAiImage}
+                prompt={promptBrief}
+                setPrompt={setPromptBrief}
+                style={promptStyle}
+                setStyle={setPromptStyle}
+                imagePrompts={imagePrompts}
+                assets={importedAssets}
+                onCopyAll={copyAllImagePrompts}
+                onImport={importPromptAssets}
+                onDownload={downloadPromptAsset}
               />
             )}
 
@@ -759,11 +760,11 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 }
 
 function Empty({ text }: { text: string }) {
-  return <div className="rounded-md border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-sm font-bold text-slate-500">{text}</div>;
+  return <div className="rounded-md border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center text-sm font-bold text-slate-500">{text}</div>;
 }
 
 function Stage({ step, text }: { step: string; text: string }) {
-  return <div className="rounded-md border border-stone-200 bg-white/76 p-4 shadow-sm"><p className="font-black text-slate-950">{step}</p><p className="mt-1 text-sm font-semibold text-slate-500">{text}</p></div>;
+  return <div className="rounded-md border border-violet-100 bg-white/76 p-4 shadow-sm"><p className="font-black text-slate-950">{step}</p><p className="mt-1 text-sm font-semibold text-slate-500">{text}</p></div>;
 }
 
 function MetricCard({ label, value, text }: { label: string; value: unknown; text: string }) {
@@ -778,7 +779,7 @@ function MetricCard({ label, value, text }: { label: string; value: unknown; tex
 
 function ProductSpotlight({ product }: { product: Product }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50/80 p-4">
+    <div className="rounded-md border border-violet-100 bg-violet-50/60 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-lg font-black text-slate-950">{product.name}</p>
@@ -787,7 +788,7 @@ function ProductSpotlight({ product }: { product: Product }) {
         <span className="rounded-md bg-slate-950 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-white">{product.id}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {product.benefits.slice(0, 2).map((benefit) => <span key={benefit} className="rounded-md bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-800">{benefit}</span>)}
+        {product.benefits.slice(0, 2).map((benefit) => <span key={benefit} className="rounded-md bg-fuchsia-50 px-2.5 py-1 text-xs font-black text-fuchsia-800">{benefit}</span>)}
       </div>
     </div>
   );
@@ -796,7 +797,7 @@ function ProductSpotlight({ product }: { product: Product }) {
 function GeneratedView({ generated, onSave, onOpenCarousel }: { generated: GeneratedContent; onSave: () => void; onOpenCarousel: () => void }) {
   return (
     <div className="grid gap-4">
-      <div className="rounded-md bg-slate-950 p-5 text-white shadow-2xl shadow-slate-950/15"><p className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">Hook principal</p><p className="mt-3 text-2xl font-black leading-tight">{generated.hook}</p></div>
+      <div className="rounded-md bg-slate-950 p-5 text-white shadow-2xl shadow-violet-950/15"><p className="text-xs font-black uppercase tracking-[0.16em] text-fuchsia-300">Hook principal</p><p className="mt-3 text-2xl font-black leading-tight">{generated.hook}</p></div>
       <div className="grid gap-4 xl:grid-cols-3">
         <CopyBlock label="Roteiro" value={generated.scenes.join("\n")} />
         <CopyBlock label="Assets para criar" value={generated.visualAssets.join("\n")} />
@@ -818,20 +819,16 @@ function GeneratedView({ generated, onSave, onOpenCarousel }: { generated: Gener
   );
 }
 
-function AIStudio({
+function PromptStudio({
   product,
   prompt,
   setPrompt,
   style,
   setStyle,
-  size,
-  setSize,
-  quality,
-  setQuality,
-  loading,
-  error,
-  images,
-  onGenerate,
+  imagePrompts,
+  assets,
+  onCopyAll,
+  onImport,
   onDownload,
 }: {
   product: Product;
@@ -839,68 +836,80 @@ function AIStudio({
   setPrompt: (value: string) => void;
   style: string;
   setStyle: (value: string) => void;
-  size: (typeof imageSizes)[number];
-  setSize: (value: (typeof imageSizes)[number]) => void;
-  quality: (typeof imageQualities)[number];
-  setQuality: (value: (typeof imageQualities)[number]) => void;
-  loading: boolean;
-  error: string;
-  images: AiImage[];
-  onGenerate: () => void;
-  onDownload: (image: AiImage) => void;
+  imagePrompts: string[];
+  assets: PromptAsset[];
+  onCopyAll: () => void;
+  onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownload: (image: PromptAsset) => void;
 }) {
+  const firstPrompt = imagePrompts[0] ?? prompt;
+
   return (
     <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-      <section className="rounded-md border border-slate-950/10 bg-slate-950 p-5 text-white shadow-2xl shadow-slate-950/15">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-300">GPT Images</p>
-        <h3 className="mt-3 text-3xl font-black leading-tight tracking-tight">Seu gerador visual dentro do LaunchKit.</h3>
-        <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">
-          Gere fotos, cenas de produto, fundos, mockups e assets sociais usando sua propria chave da OpenAI no servidor.
+      <section className="rounded-md border border-violet-500/20 bg-slate-950 p-5 text-white shadow-2xl shadow-violet-950/20">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-300">Prompt Studio</p>
+        <h3 className="mt-3 text-3xl font-black leading-tight tracking-tight">Prompts prontos para usar no ChatGPT.</h3>
+        <p className="mt-3 text-sm font-semibold leading-6 text-violet-100/80">
+          Monte o carrossel aqui, gere as imagens no plano que voce ja usa e importe os arquivos de volta para fechar o pacote.
         </p>
         <div className="mt-6 grid gap-4">
           <Field label="Direcao criativa">
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} className={`${controlClass} min-h-36 py-3 text-base leading-6`} />
           </Field>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <Field label="Estilo">
-              <SelectField value={style} onChange={setStyle} options={imageStyles} />
+              <SelectField value={style} onChange={setStyle} options={promptStyles} />
             </Field>
-            <Field label="Tamanho">
-              <select value={size} onChange={(event) => setSize(event.target.value as (typeof imageSizes)[number])} className={controlClass}>
-                {imageSizes.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </Field>
-            <Field label="Qualidade">
-              <select value={quality} onChange={(event) => setQuality(event.target.value as (typeof imageQualities)[number])} className={controlClass}>
-                {imageQualities.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </Field>
+            <a href="https://chatgpt.com/" target="_blank" className="self-end rounded-md bg-fuchsia-500 px-4 py-3 text-center text-sm font-black text-white shadow-lg shadow-fuchsia-500/20 hover:bg-fuchsia-400">Abrir ChatGPT</a>
           </div>
           <div className="rounded-md border border-white/10 bg-white/10 p-4">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">Contexto usado</p>
             <p className="mt-2 text-sm font-bold text-white">{product.name}</p>
-            <p className="mt-1 text-sm leading-5 text-slate-300">{product.description}</p>
+            <p className="mt-1 text-sm leading-5 text-violet-100/75">{product.description}</p>
           </div>
-          {error ? <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm font-bold text-red-800">{error}</div> : null}
-          <button onClick={onGenerate} disabled={loading} className="rounded-md bg-teal-400 px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-teal-400/20 hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60">
-            {loading ? "Gerando imagem..." : "Gerar imagem premium"}
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button onClick={() => navigator.clipboard.writeText(firstPrompt)} className="rounded-md bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-white/10">Copiar primeiro prompt</button>
+            <button onClick={onCopyAll} className="rounded-md bg-fuchsia-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-fuchsia-500/20 hover:bg-fuchsia-400">Copiar todos</button>
+          </div>
+          <label className="grid cursor-pointer place-items-center rounded-md border border-dashed border-fuchsia-300/60 bg-fuchsia-300/10 px-4 py-5 text-center text-sm font-black text-white hover:bg-fuchsia-300/15">
+            Importar imagens geradas
+            <input type="file" accept="image/*" multiple onChange={onImport} className="sr-only" />
+          </label>
         </div>
       </section>
 
       <div className="grid gap-5">
-        <section className="overflow-hidden rounded-md border border-white/80 bg-white/86 shadow-xl shadow-slate-950/[0.06] backdrop-blur">
-          <div className="border-b border-stone-200 px-5 py-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-teal-700">Moodboard gerado</p>
-            <h3 className="mt-1 text-xl font-black text-slate-950">Assets para campanhas e cards</h3>
+        <section className="overflow-hidden rounded-md border border-white/80 bg-white/86 shadow-xl shadow-violet-950/[0.08] backdrop-blur">
+          <div className="border-b border-violet-100 px-5 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-fuchsia-700">Prompts por slide</p>
+            <h3 className="mt-1 text-xl font-black text-slate-950">Fila visual do carrossel</h3>
           </div>
-          {images.length ? (
+          <div className="grid gap-3 p-5 xl:grid-cols-2">
+            {imagePrompts.map((item, index) => (
+              <div key={`${item}-${index}`} className="rounded-md border border-violet-100 bg-violet-50/60 p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-fuchsia-700">Imagem {index + 1}</p>
+                  <button onClick={() => navigator.clipboard.writeText(item)} className="rounded-md bg-white px-3 py-1.5 text-xs font-black text-slate-800 ring-1 ring-violet-100">Copiar</button>
+                </div>
+                <p className="max-h-44 overflow-auto whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-600">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-md border border-white/80 bg-white/86 shadow-xl shadow-violet-950/[0.08] backdrop-blur">
+          <div className="border-b border-violet-100 px-5 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-fuchsia-700">Imagens importadas</p>
+            <h3 className="mt-1 text-xl font-black text-slate-950">Assets vindos do ChatGPT</h3>
+          </div>
+          {assets.length ? (
             <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-              {images.map((image) => (
-                <div key={image.id} className="group overflow-hidden rounded-md border border-stone-200 bg-stone-50 shadow-sm">
-                  <Image src={image.src} alt={image.prompt} width={1024} height={1536} unoptimized className="aspect-[2/3] w-full object-cover" />
+              {assets.map((image) => (
+                <div key={image.id} className="group overflow-hidden rounded-md border border-violet-100 bg-violet-50/60 shadow-sm">
+                  <Image src={image.src} alt={image.name} width={1024} height={1536} unoptimized className="aspect-[2/3] w-full object-cover" />
                   <div className="grid gap-3 p-3">
-                    <p className="line-clamp-3 text-xs font-semibold leading-5 text-slate-500">{image.prompt}</p>
+                    <p className="line-clamp-2 text-xs font-black text-slate-700">{image.name}</p>
+                    <p className="line-clamp-2 text-xs font-semibold leading-5 text-slate-500">{image.prompt}</p>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">{image.createdAt}</span>
                       <button onClick={() => onDownload(image)} className="rounded-md bg-slate-950 px-3 py-2 text-xs font-black text-white">Baixar</button>
@@ -910,13 +919,13 @@ function AIStudio({
               ))}
             </div>
           ) : (
-            <div className="grid min-h-[520px] place-items-center p-6">
+            <div className="grid min-h-[360px] place-items-center p-6">
               <div className="max-w-md text-center">
-                <div className="mx-auto grid aspect-[2/3] w-56 place-items-center rounded-md border border-dashed border-stone-300 bg-stone-50 text-sm font-black text-slate-400 shadow-inner">
-                  Preview IA
+                <div className="mx-auto grid aspect-[2/3] w-48 place-items-center rounded-md border border-dashed border-violet-200 bg-violet-50 text-sm font-black text-fuchsia-500 shadow-inner">
+                  Drop visual
                 </div>
-                <p className="mt-5 text-lg font-black text-slate-950">Nenhuma imagem gerada ainda.</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Configure sua `OPENAI_API_KEY` no ambiente e gere a primeira cena visual do LaunchKit.</p>
+                <p className="mt-5 text-lg font-black text-slate-950">Nenhum asset importado ainda.</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Copie os prompts, gere no ChatGPT e importe as imagens aqui.</p>
               </div>
             </div>
           )}
@@ -952,7 +961,7 @@ function PublishHub({
     <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
       <Panel title="Publicacao assistida">
         <div className="grid gap-4">
-          <div className="rounded-md border border-amber-200 bg-amber-50/90 p-4 text-sm font-bold leading-6 text-amber-900 shadow-sm">
+          <div className="rounded-md border border-violet-200 bg-violet-50/90 p-4 text-sm font-bold leading-6 text-violet-900 shadow-sm">
             Postagem direta real depende de APIs oficiais e permissoes das plataformas. No MVP, o LaunchKit prepara arquivos, copia o texto e abre a tela de publicacao para postagem manual rapida.
           </div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -967,7 +976,7 @@ function PublishHub({
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {destinations.map(([name, href]) => (
-              <a key={name} href={href} target="_blank" className="rounded-md border border-stone-200 bg-white/90 px-3 py-3 text-center text-sm font-black text-slate-900 shadow-sm hover:border-teal-200 hover:bg-teal-50">
+              <a key={name} href={href} target="_blank" className="rounded-md border border-violet-100 bg-white/90 px-3 py-3 text-center text-sm font-black text-slate-900 shadow-sm hover:border-fuchsia-200 hover:bg-fuchsia-50">
                 Abrir {name}
               </a>
             ))}
@@ -991,8 +1000,8 @@ function PublishHub({
 
 function CopyBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50/80 p-4 shadow-sm">
-      <div className="mb-2 flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><button onClick={() => navigator.clipboard.writeText(value)} className="rounded-md bg-white px-3 py-1.5 text-xs font-black ring-1 ring-stone-200 hover:ring-teal-300">Copiar</button></div>
+    <div className="rounded-md border border-violet-100 bg-violet-50/60 p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><button onClick={() => navigator.clipboard.writeText(value)} className="rounded-md bg-white px-3 py-1.5 text-xs font-black ring-1 ring-violet-100 hover:ring-fuchsia-300">Copiar</button></div>
       <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
     </div>
   );
@@ -1025,7 +1034,7 @@ function LibraryRows({ library, products, setLibrary }: { library: LibraryItem[]
   if (!library.length) return <Empty text="Nenhum conteudo salvo ainda." />;
   return <div className="grid gap-2">{library.map((item) => {
     const product = products.find((entry) => entry.id === item.productId);
-    return <div key={item.id} className="grid gap-3 rounded-md border border-stone-200 bg-white/72 p-4 shadow-sm md:grid-cols-[1fr_170px_130px] md:items-center"><div><p className="font-black leading-snug text-slate-950">{item.title}</p><p className="mt-1 text-xs font-bold text-slate-500">{product?.name} - {item.channel} - {item.format} - {item.plannedDate}</p><p className="mt-2 text-xs font-semibold text-slate-400">Views {item.views} - Curtidas {item.likes} - Comentarios {item.comments} - Downloads {item.estimatedDownloads}</p></div><select value={item.status} onChange={(event) => setLibrary((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.value as LibraryItem["status"] } : entry))} className={`${controlClass} min-h-10 font-semibold`}>{statuses.map((status) => <option key={status}>{status}</option>)}</select><button onClick={() => navigator.clipboard.writeText(`${item.content.caption}\n\n${item.content.hashtags.join(" ")}`)} className={primaryButtonClass}>Copiar post</button></div>;
+    return <div key={item.id} className="grid gap-3 rounded-md border border-violet-100 bg-white/72 p-4 shadow-sm md:grid-cols-[1fr_170px_130px] md:items-center"><div><p className="font-black leading-snug text-slate-950">{item.title}</p><p className="mt-1 text-xs font-bold text-slate-500">{product?.name} - {item.channel} - {item.format} - {item.plannedDate}</p><p className="mt-2 text-xs font-semibold text-slate-400">Views {item.views} - Curtidas {item.likes} - Comentarios {item.comments} - Downloads {item.estimatedDownloads}</p></div><select value={item.status} onChange={(event) => setLibrary((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.value as LibraryItem["status"] } : entry))} className={`${controlClass} min-h-10 font-semibold`}>{statuses.map((status) => <option key={status}>{status}</option>)}</select><button onClick={() => navigator.clipboard.writeText(`${item.content.caption}\n\n${item.content.hashtags.join(" ")}`)} className={primaryButtonClass}>Copiar post</button></div>;
   })}</div>;
 }
 
@@ -1044,5 +1053,5 @@ function ProductEditor({ product, onChange }: { product: Product; onChange: (pro
 }
 
 function Settings() {
-  return <Panel title="Automacao possivel sem prometer API social"><div className="grid gap-3 text-sm font-semibold leading-6 text-slate-600"><p>Canva nao e obrigatorio agora. O LaunchKit ja gera PNG 1080x1350 no navegador, copia legendas e abre ferramentas externas como atalho.</p><p>Proxima evolucao: rota com OpenAI quando houver OPENAI_API_KEY, upload de prints do app, presets visuais por produto e export ZIP dos cards.</p><div className="flex flex-wrap gap-2 pt-2">{[["Instagram", "https://www.instagram.com/"], ["TikTok", "https://www.tiktok.com/"], ["Canva", "https://www.canva.com/"], ["CapCut", "https://www.capcut.com/"]].map(([name, href]) => <a key={name} href={href} target="_blank" className={secondaryButtonClass}>Abrir {name}</a>)}</div></div></Panel>;
+  return <Panel title="Automacao possivel sem prometer API social"><div className="grid gap-3 text-sm font-semibold leading-6 text-slate-600"><p>Canva nao e obrigatorio agora. O LaunchKit ja gera PNG 1080x1350 no navegador, copia legendas e abre ferramentas externas como atalho.</p><p>Fluxo atual: Prompt Studio para usar com o ChatGPT do seu plano, importacao manual das imagens geradas, presets visuais por produto e export dos cards.</p><div className="flex flex-wrap gap-2 pt-2">{[["ChatGPT", "https://chatgpt.com/"], ["Instagram", "https://www.instagram.com/"], ["TikTok", "https://www.tiktok.com/"], ["Canva", "https://www.canva.com/"], ["CapCut", "https://www.capcut.com/"]].map(([name, href]) => <a key={name} href={href} target="_blank" className={secondaryButtonClass}>Abrir {name}</a>)}</div></div></Panel>;
 }
