@@ -71,6 +71,10 @@ const goals = ["download", "cadastro", "educacao", "prova social", "retencao", "
 const styles = ["chef testando", "antes/depois", "problema/solucao", "tutorial", "lista", "humor leve", "comparacao"];
 const durations = ["15s", "30s", "45s"];
 const statuses: LibraryItem["status"][] = ["ideia", "em producao", "postado", "descartado"];
+const controlClass = "min-h-11 rounded-md border border-stone-200 bg-white/90 px-3 text-sm text-slate-950 shadow-sm outline-none ring-teal-500/20 focus:border-teal-500 focus:ring-4";
+const primaryButtonClass = "rounded-md bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-950/15 hover:bg-slate-800";
+const accentButtonClass = "rounded-md bg-teal-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700";
+const secondaryButtonClass = "rounded-md border border-stone-200 bg-white/90 px-4 py-2.5 text-sm font-black text-slate-800 shadow-sm hover:border-slate-300 hover:bg-white";
 
 const themes: Record<ThemeId, { name: string; bg: string; fg: string; muted: string; accent: string; soft: string }> = {
   clean: { name: "Clean SaaS", bg: "#f8fafc", fg: "#0f172a", muted: "#475569", accent: "#059669", soft: "#d1fae5" },
@@ -400,7 +404,7 @@ function drawSlideToCanvas(canvas: HTMLCanvasElement, slide: CarouselSlide, prod
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="grid gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
+    <label className="grid gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
       {label}
       {children}
     </label>
@@ -409,7 +413,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SelectField({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: string[] }) {
   return (
-    <select value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none ring-emerald-500 focus:ring-2">
+    <select value={value} onChange={(event) => onChange(event.target.value)} className={controlClass}>
       {options.map((option) => <option key={option}>{option}</option>)}
     </select>
   );
@@ -508,50 +512,93 @@ export function LaunchKitApp() {
     navigator.clipboard.writeText(`${pack.caption}\n\n${pack.hashtags.join(" ")}\n\nCTA: ${pack.cta}`);
   }
 
-  const nav = ["Dashboard", "Gerar conteudo", "Carrossel", "Publicar", "Biblioteca", "Calendario", "Produtos", "Configuracoes"];
+  const nav = [
+    ["Dashboard", "01"],
+    ["Gerar conteudo", "02"],
+    ["Carrossel", "03"],
+    ["Publicar", "04"],
+    ["Biblioteca", "05"],
+    ["Calendario", "06"],
+    ["Produtos", "07"],
+    ["Configuracoes", "08"],
+  ];
 
   return (
-    <main className="min-h-dvh bg-[#f6f7f4] text-slate-950">
+    <main className="min-h-dvh text-slate-950">
       <div className="flex min-h-dvh">
-        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white px-4 py-5 lg:block">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Mafra Labs</p>
-          <h1 className="mt-1 font-sans text-xl font-black">LaunchKit Growth</h1>
-          <nav className="mt-6 grid gap-1">
-            {nav.map((item) => (
-              <button key={item} onClick={() => setActive(item)} className={`rounded-md px-3 py-2 text-left text-sm font-semibold ${active === item ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
-                {item}
+        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/72 px-5 py-6 shadow-2xl shadow-slate-950/5 backdrop-blur-xl lg:block">
+          <div className="rounded-md border border-slate-950/10 bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/20">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-teal-300">Mafra Labs</p>
+            <h1 className="mt-2 font-sans text-2xl font-black leading-tight">LaunchKit Growth</h1>
+            <p className="mt-3 text-sm font-semibold leading-5 text-slate-300">Studio interno para transformar ideias em campanhas, cards e pacotes de publicacao.</p>
+          </div>
+          <nav className="mt-6 grid gap-2">
+            {nav.map(([item, index]) => (
+              <button key={item} onClick={() => setActive(item)} className={`group flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-black ${active === item ? "bg-slate-950 text-white shadow-lg shadow-slate-950/15" : "text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm"}`}>
+                <span className={`grid h-8 w-8 place-items-center rounded-md text-[11px] ${active === item ? "bg-teal-400 text-slate-950" : "bg-stone-100 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-700"}`}>{index}</span>
+                <span>{item}</span>
               </button>
             ))}
           </nav>
+          <div className="mt-6 rounded-md border border-teal-200 bg-teal-50 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-teal-700">MVP atual</p>
+            <p className="mt-2 text-sm font-bold leading-5 text-slate-700">Persistencia local, export PNG e publicacao assistida sem promessa falsa de API social.</p>
+          </div>
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:px-8">
+          <header className="sticky top-0 z-10 border-b border-white/70 bg-white/72 px-4 py-4 shadow-sm shadow-slate-950/5 backdrop-blur-xl lg:px-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Ferramenta interna</p>
-                <h2 className="font-sans text-2xl font-black">{active}</h2>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-700">Ferramenta interna de crescimento organico</p>
+                <h2 className="mt-1 font-sans text-3xl font-black tracking-tight">{active}</h2>
               </div>
               <div className="flex gap-2">
-                <button onClick={generateCampaign} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Gerar pacote</button>
-                <button onClick={generateCarousel} className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold">Criar cards</button>
+                <button onClick={generateCampaign} className={accentButtonClass}>Gerar pacote</button>
+                <button onClick={generateCarousel} className={secondaryButtonClass}>Criar cards</button>
               </div>
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto lg:hidden">
-              {nav.map((item) => <button key={item} onClick={() => setActive(item)} className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-bold ${active === item ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600"}`}>{item}</button>)}
+              {nav.map(([item]) => <button key={item} onClick={() => setActive(item)} className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-black ${active === item ? "bg-slate-950 text-white" : "bg-white/80 text-slate-600"}`}>{item}</button>)}
             </div>
           </header>
 
-          <div className="grid gap-5 p-4 lg:p-8">
+          <div className="grid gap-6 p-4 lg:p-8">
             {active === "Dashboard" && (
               <>
-                <div className="grid gap-4 md:grid-cols-4">
-                  {[["Ideias salvas", metrics.total], ["Em producao", metrics.production], ["Postados", metrics.posted], ["Views manuais", metrics.views]].map(([label, value]) => (
-                    <div key={label} className="rounded-md border border-slate-200 bg-white p-4">
-                      <p className="text-sm font-semibold text-slate-500">{label}</p>
-                      <p className="mt-2 text-3xl font-black">{value}</p>
+                <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+                  <section className="overflow-hidden rounded-md border border-slate-950/10 bg-slate-950 text-white shadow-2xl shadow-slate-950/15">
+                    <div className="grid gap-6 p-6 md:grid-cols-[1fr_260px] md:p-8">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-300">Growth studio</p>
+                        <h3 className="mt-3 max-w-2xl text-4xl font-black leading-[0.95] tracking-tight md:text-5xl">Do briefing ao post pronto, sem planilha solta.</h3>
+                        <p className="mt-4 max-w-xl text-base font-semibold leading-7 text-slate-300">Crie roteiros, carrosseis, pacotes de publicacao e um calendario simples para TemAi, SplitMate e proximos apps da Mafra Labs.</p>
+                        <div className="mt-6 flex flex-wrap gap-2">
+                          <button onClick={generateCampaign} className="rounded-md bg-teal-400 px-4 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-400/20">Novo pacote</button>
+                          <button onClick={() => setActive("Carrossel")} className="rounded-md border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-black text-white hover:bg-white/15">Abrir estudio</button>
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-white/10 bg-white/10 p-4">
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">Fila de hoje</p>
+                        <div className="mt-4 grid gap-3">
+                          {products.map((item) => (
+                            <div key={item.id} className="rounded-md bg-white p-3 text-slate-950">
+                              <p className="font-black">{item.name}</p>
+                              <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{item.benefits[0]} / {item.pains[0]}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  </section>
+                  <Panel title="Produtos ativos">
+                    <div className="grid gap-3">
+                      {products.map((item) => <ProductSpotlight key={item.id} product={item} />)}
+                    </div>
+                  </Panel>
+                </div>
+                <div className="grid gap-4 md:grid-cols-4">
+                  {[["Ideias salvas", metrics.total, "Biblioteca local"], ["Em producao", metrics.production, "Pecas em andamento"], ["Postados", metrics.posted, "Controle manual"], ["Views manuais", metrics.views, "Dados inseridos"]].map(([label, value, text]) => <MetricCard key={label} label={String(label)} value={value} text={String(text)} />)}
                 </div>
                 <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                   <Panel title="Pipeline de producao">
@@ -574,8 +621,8 @@ export function LaunchKitApp() {
                     <Field label="Objetivo"><SelectField value={campaignInput.goal} onChange={(value) => setCampaignInput({ ...campaignInput, goal: value })} options={goals} /></Field>
                     <Field label="Estilo"><SelectField value={campaignInput.style} onChange={(value) => setCampaignInput({ ...campaignInput, style: value })} options={styles} /></Field>
                     <Field label="Duracao"><SelectField value={campaignInput.duration} onChange={(value) => setCampaignInput({ ...campaignInput, duration: value })} options={durations} /></Field>
-                    <Field label="Variacoes"><input type="number" min={1} max={8} value={campaignInput.variations} onChange={(event) => setCampaignInput({ ...campaignInput, variations: Number(event.target.value) })} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" /></Field>
-                    <button onClick={generateCampaign} className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">Gerar pacote completo</button>
+                    <Field label="Variacoes"><input type="number" min={1} max={8} value={campaignInput.variations} onChange={(event) => setCampaignInput({ ...campaignInput, variations: Number(event.target.value) })} className={controlClass} /></Field>
+                    <button onClick={generateCampaign} className={primaryButtonClass}>Gerar pacote completo</button>
                   </div>
                 </Panel>
                 <Panel title="Pacote pronto para produzir">
@@ -590,16 +637,16 @@ export function LaunchKitApp() {
                   <div className="grid gap-3">
                     <Field label="Produto"><SelectField value={carouselProductId} onChange={setCarouselProductId} options={products.map((item) => item.id)} /></Field>
                     <Field label="Objetivo"><SelectField value={carouselGoal} onChange={setCarouselGoal} options={goals} /></Field>
-                    <Field label="Quantidade"><input type="number" min={5} max={8} value={slideCount} onChange={(event) => setSlideCount(Number(event.target.value))} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field>
+                    <Field label="Quantidade"><input type="number" min={5} max={8} value={slideCount} onChange={(event) => setSlideCount(Number(event.target.value))} className={controlClass} /></Field>
                     <Field label="Template visual"><SelectField value={themeId} onChange={(value) => setThemeId(value as ThemeId)} options={Object.keys(themes)} /></Field>
-                    <button onClick={generateCarousel} className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">Gerar carrossel visual</button>
-                    <button onClick={exportAllSlides} className="rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Baixar todos PNG</button>
-                    <button onClick={() => downloadText("launchkit-carousel.md", slides.map((slide, index) => `## Slide ${index + 1}: ${slide.title}\n${slide.text}\nVisual: ${slide.visual}\nEstilo: ${slide.visualStyle ?? "character"}`).join("\n\n"))} className="rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold">Exportar roteiro MD</button>
+                    <button onClick={generateCarousel} className={primaryButtonClass}>Gerar carrossel visual</button>
+                    <button onClick={exportAllSlides} className={accentButtonClass}>Baixar todos PNG</button>
+                    <button onClick={() => downloadText("launchkit-carousel.md", slides.map((slide, index) => `## Slide ${index + 1}: ${slide.title}\n${slide.text}\nVisual: ${slide.visual}\nEstilo: ${slide.visualStyle ?? "character"}`).join("\n\n"))} className={secondaryButtonClass}>Exportar roteiro MD</button>
                   </div>
                 </Panel>
                 <div className="grid gap-4">
                   <Panel title="Preview 1080x1350">
-                    {slides.length ? <canvas ref={previewCanvas} className="aspect-[4/5] w-full max-w-[360px] rounded-md border border-slate-200 bg-white" /> : <Empty text="Gere cards com template visual, placeholders de imagem e export PNG." />}
+                    {slides.length ? <div className="rounded-md bg-slate-950 p-4 shadow-2xl shadow-slate-950/15"><canvas ref={previewCanvas} className="aspect-[4/5] w-full max-w-[360px] rounded-md bg-white shadow-xl" /></div> : <Empty text="Gere cards com template visual, placeholders de imagem e export PNG." />}
                   </Panel>
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {slides.map((slide, index) => (
@@ -632,21 +679,48 @@ export function LaunchKitApp() {
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><h3 className="mb-4 font-sans text-base font-black">{title}</h3>{children}</section>;
+  return <section className="rounded-md border border-white/80 bg-white/82 p-5 shadow-xl shadow-slate-950/[0.06] backdrop-blur"><h3 className="mb-4 font-sans text-base font-black tracking-tight text-slate-950">{title}</h3>{children}</section>;
 }
 
 function Empty({ text }: { text: string }) {
-  return <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500">{text}</div>;
+  return <div className="rounded-md border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-sm font-bold text-slate-500">{text}</div>;
 }
 
 function Stage({ step, text }: { step: string; text: string }) {
-  return <div className="rounded-md border border-slate-200 bg-slate-50 p-4"><p className="font-black">{step}</p><p className="mt-1 text-sm font-semibold text-slate-500">{text}</p></div>;
+  return <div className="rounded-md border border-stone-200 bg-white/76 p-4 shadow-sm"><p className="font-black text-slate-950">{step}</p><p className="mt-1 text-sm font-semibold text-slate-500">{text}</p></div>;
+}
+
+function MetricCard({ label, value, text }: { label: string; value: unknown; text: string }) {
+  return (
+    <div className="rounded-md border border-white/80 bg-white/86 p-5 shadow-xl shadow-slate-950/[0.06] backdrop-blur">
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="mt-3 text-4xl font-black tracking-tight text-slate-950">{String(value)}</p>
+      <p className="mt-2 text-sm font-bold text-slate-500">{text}</p>
+    </div>
+  );
+}
+
+function ProductSpotlight({ product }: { product: Product }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-stone-50/80 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-lg font-black text-slate-950">{product.name}</p>
+          <p className="mt-1 text-sm font-semibold leading-5 text-slate-500">{product.description}</p>
+        </div>
+        <span className="rounded-md bg-slate-950 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-white">{product.id}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {product.benefits.slice(0, 2).map((benefit) => <span key={benefit} className="rounded-md bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-800">{benefit}</span>)}
+      </div>
+    </div>
+  );
 }
 
 function GeneratedView({ generated, onSave, onOpenCarousel }: { generated: GeneratedContent; onSave: () => void; onOpenCarousel: () => void }) {
   return (
     <div className="grid gap-4">
-      <div className="rounded-md bg-slate-950 p-4 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-emerald-300">Hook</p><p className="mt-2 text-xl font-black">{generated.hook}</p></div>
+      <div className="rounded-md bg-slate-950 p-5 text-white shadow-2xl shadow-slate-950/15"><p className="text-xs font-black uppercase tracking-[0.16em] text-teal-300">Hook principal</p><p className="mt-3 text-2xl font-black leading-tight">{generated.hook}</p></div>
       <div className="grid gap-4 xl:grid-cols-3">
         <CopyBlock label="Roteiro" value={generated.scenes.join("\n")} />
         <CopyBlock label="Assets para criar" value={generated.visualAssets.join("\n")} />
@@ -659,10 +733,10 @@ function GeneratedView({ generated, onSave, onOpenCarousel }: { generated: Gener
         <CopyBlock label="Variacoes A/B" value={generated.abTests.join("\n")} />
       </div>
       <div className="flex flex-wrap gap-2">
-        <button onClick={onSave} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Salvar na biblioteca</button>
-        <button onClick={onOpenCarousel} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-bold text-white">Editar carrossel gerado</button>
-        <a href="https://www.canva.com/" target="_blank" className="rounded-md border border-slate-200 px-4 py-2 text-sm font-bold">Abrir Canva</a>
-        <a href="https://www.capcut.com/" target="_blank" className="rounded-md border border-slate-200 px-4 py-2 text-sm font-bold">Abrir CapCut</a>
+        <button onClick={onSave} className={accentButtonClass}>Salvar na biblioteca</button>
+        <button onClick={onOpenCarousel} className={primaryButtonClass}>Editar carrossel gerado</button>
+        <a href="https://www.canva.com/" target="_blank" className={secondaryButtonClass}>Abrir Canva</a>
+        <a href="https://www.capcut.com/" target="_blank" className={secondaryButtonClass}>Abrir CapCut</a>
       </div>
     </div>
   );
@@ -694,7 +768,7 @@ function PublishHub({
     <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
       <Panel title="Publicacao assistida">
         <div className="grid gap-4">
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+          <div className="rounded-md border border-amber-200 bg-amber-50/90 p-4 text-sm font-bold leading-6 text-amber-900 shadow-sm">
             Postagem direta real depende de APIs oficiais e permissoes das plataformas. No MVP, o LaunchKit prepara arquivos, copia o texto e abre a tela de publicacao para postagem manual rapida.
           </div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -703,13 +777,13 @@ function PublishHub({
             <Stage step="3. Canal" text="Abrir plataforma e postar" />
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={onCreateCards} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-bold text-white">Gerar cards</button>
-            <button onClick={onExport} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Baixar PNGs</button>
-            <button onClick={onCopy} className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold">Copiar copy</button>
+            <button onClick={onCreateCards} className={primaryButtonClass}>Gerar cards</button>
+            <button onClick={onExport} className={accentButtonClass}>Baixar PNGs</button>
+            <button onClick={onCopy} className={secondaryButtonClass}>Copiar copy</button>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {destinations.map(([name, href]) => (
-              <a key={name} href={href} target="_blank" className="rounded-md border border-slate-200 bg-white px-3 py-3 text-center text-sm font-black text-slate-900 hover:bg-slate-50">
+              <a key={name} href={href} target="_blank" className="rounded-md border border-stone-200 bg-white/90 px-3 py-3 text-center text-sm font-black text-slate-900 shadow-sm hover:border-teal-200 hover:bg-teal-50">
                 Abrir {name}
               </a>
             ))}
@@ -733,8 +807,8 @@ function PublishHub({
 
 function CopyBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-      <div className="mb-2 flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><button onClick={() => navigator.clipboard.writeText(value)} className="rounded-md bg-white px-3 py-1.5 text-xs font-bold ring-1 ring-slate-200">Copiar</button></div>
+    <div className="rounded-md border border-stone-200 bg-stone-50/80 p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-3"><p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><button onClick={() => navigator.clipboard.writeText(value)} className="rounded-md bg-white px-3 py-1.5 text-xs font-black ring-1 ring-stone-200 hover:ring-teal-300">Copiar</button></div>
       <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
     </div>
   );
@@ -743,22 +817,22 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
 function SlideCard({ slide, product, themeId, index, onExport, onChange }: { slide: CarouselSlide; product: Product; themeId: ThemeId; index: number; onExport: () => void; onChange: (slide: CarouselSlide) => void }) {
   const theme = themes[themeId];
   return (
-    <div className="grid gap-2 rounded-md border border-slate-200 bg-white p-3">
-      <div className="aspect-[4/5] rounded-md p-4" style={{ background: theme.bg, color: theme.fg }}>
-        <div className="h-full rounded-md p-4" style={{ background: theme.soft }}>
+    <div className="grid gap-3 rounded-md border border-white/80 bg-white/86 p-3 shadow-xl shadow-slate-950/[0.06] backdrop-blur">
+      <div className="aspect-[4/5] rounded-md p-3 shadow-inner" style={{ background: theme.bg, color: theme.fg }}>
+        <div className="h-full rounded-md p-4 shadow-lg" style={{ background: theme.soft }}>
           <p className="text-xs font-black uppercase" style={{ color: theme.accent }}>{product.name} / {index + 1}</p>
-          <div className="mt-5 rounded-md border-2 border-dashed p-3 text-xs font-bold" style={{ borderColor: theme.accent, color: theme.muted }}>{slide.visual}</div>
+          <div className="mt-5 rounded-md border-2 border-dashed bg-white/30 p-3 text-xs font-bold" style={{ borderColor: theme.accent, color: theme.muted }}>{slide.visual}</div>
           <h4 className="mt-5 text-2xl font-black leading-tight">{slide.title}</h4>
           <p className="mt-3 text-sm font-semibold leading-relaxed" style={{ color: theme.muted }}>{slide.text}</p>
         </div>
       </div>
-      <input value={slide.title} onChange={(event) => onChange({ ...slide, title: event.target.value })} className="h-9 rounded-md border border-slate-200 px-2 text-sm font-bold" />
-      <textarea value={slide.text} onChange={(event) => onChange({ ...slide, text: event.target.value })} className="min-h-16 rounded-md border border-slate-200 p-2 text-sm" />
-      <textarea value={slide.visual} onChange={(event) => onChange({ ...slide, visual: event.target.value })} className="min-h-14 rounded-md border border-slate-200 p-2 text-xs" />
-      <select value={slide.visualStyle ?? "character"} onChange={(event) => onChange({ ...slide, visualStyle: event.target.value as VisualStyle })} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs font-bold">
+      <input value={slide.title} onChange={(event) => onChange({ ...slide, title: event.target.value })} className={`${controlClass} min-h-10 font-bold`} />
+      <textarea value={slide.text} onChange={(event) => onChange({ ...slide, text: event.target.value })} className={`${controlClass} min-h-20 py-2`} />
+      <textarea value={slide.visual} onChange={(event) => onChange({ ...slide, visual: event.target.value })} className={`${controlClass} min-h-16 py-2 text-xs`} />
+      <select value={slide.visualStyle ?? "character"} onChange={(event) => onChange({ ...slide, visualStyle: event.target.value as VisualStyle })} className={`${controlClass} min-h-10 text-xs font-bold`}>
         {["character", "phone", "split", "checklist", "scene"].map((style) => <option key={style}>{style}</option>)}
       </select>
-      <button onClick={onExport} className="rounded-md bg-slate-950 px-3 py-2 text-xs font-bold text-white">Baixar PNG</button>
+      <button onClick={onExport} className={primaryButtonClass}>Baixar PNG</button>
     </div>
   );
 }
@@ -767,7 +841,7 @@ function LibraryRows({ library, products, setLibrary }: { library: LibraryItem[]
   if (!library.length) return <Empty text="Nenhum conteudo salvo ainda." />;
   return <div className="grid gap-2">{library.map((item) => {
     const product = products.find((entry) => entry.id === item.productId);
-    return <div key={item.id} className="grid gap-3 rounded-md border border-slate-200 p-3 md:grid-cols-[1fr_150px_120px] md:items-center"><div><p className="font-bold leading-snug">{item.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{product?.name} - {item.channel} - {item.format} - {item.plannedDate}</p><p className="mt-2 text-xs text-slate-500">Views {item.views} - Curtidas {item.likes} - Comentarios {item.comments} - Downloads {item.estimatedDownloads}</p></div><select value={item.status} onChange={(event) => setLibrary((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.value as LibraryItem["status"] } : entry))} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm font-semibold">{statuses.map((status) => <option key={status}>{status}</option>)}</select><button onClick={() => navigator.clipboard.writeText(`${item.content.caption}\n\n${item.content.hashtags.join(" ")}`)} className="rounded-md bg-slate-950 px-3 py-2 text-xs font-bold text-white">Copiar post</button></div>;
+    return <div key={item.id} className="grid gap-3 rounded-md border border-stone-200 bg-white/72 p-4 shadow-sm md:grid-cols-[1fr_170px_130px] md:items-center"><div><p className="font-black leading-snug text-slate-950">{item.title}</p><p className="mt-1 text-xs font-bold text-slate-500">{product?.name} - {item.channel} - {item.format} - {item.plannedDate}</p><p className="mt-2 text-xs font-semibold text-slate-400">Views {item.views} - Curtidas {item.likes} - Comentarios {item.comments} - Downloads {item.estimatedDownloads}</p></div><select value={item.status} onChange={(event) => setLibrary((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.value as LibraryItem["status"] } : entry))} className={`${controlClass} min-h-10 font-semibold`}>{statuses.map((status) => <option key={status}>{status}</option>)}</select><button onClick={() => navigator.clipboard.writeText(`${item.content.caption}\n\n${item.content.hashtags.join(" ")}`)} className={primaryButtonClass}>Copiar post</button></div>;
   })}</div>;
 }
 
@@ -782,9 +856,9 @@ function Plan({ products, days }: { products: Product[]; days: number }) {
 }
 
 function ProductEditor({ product, onChange }: { product: Product; onChange: (product: Product) => void }) {
-  return <Panel title={product.name}><div className="grid gap-3"><Field label="Nome"><input value={product.name} onChange={(event) => onChange({ ...product, name: event.target.value })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field><Field label="Descricao"><textarea value={product.description} onChange={(event) => onChange({ ...product, description: event.target.value })} className="min-h-20 rounded-md border border-slate-200 p-3 text-sm" /></Field><Field label="Publico-alvo"><textarea value={product.audience} onChange={(event) => onChange({ ...product, audience: event.target.value })} className="min-h-20 rounded-md border border-slate-200 p-3 text-sm" /></Field><Field label="Dores"><input value={product.pains.join(", ")} onChange={(event) => onChange({ ...product, pains: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field><Field label="Beneficios"><input value={product.benefits.join(", ")} onChange={(event) => onChange({ ...product, benefits: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field><Field label="Tom de voz"><input value={product.voice} onChange={(event) => onChange({ ...product, voice: event.target.value })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field><Field label="CTA principal"><input value={product.cta} onChange={(event) => onChange({ ...product, cta: event.target.value })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field><Field label="Link"><input value={product.link} onChange={(event) => onChange({ ...product, link: event.target.value })} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></Field></div></Panel>;
+  return <Panel title={product.name}><div className="grid gap-3"><Field label="Nome"><input value={product.name} onChange={(event) => onChange({ ...product, name: event.target.value })} className={controlClass} /></Field><Field label="Descricao"><textarea value={product.description} onChange={(event) => onChange({ ...product, description: event.target.value })} className={`${controlClass} min-h-24 py-3`} /></Field><Field label="Publico-alvo"><textarea value={product.audience} onChange={(event) => onChange({ ...product, audience: event.target.value })} className={`${controlClass} min-h-24 py-3`} /></Field><Field label="Dores"><input value={product.pains.join(", ")} onChange={(event) => onChange({ ...product, pains: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className={controlClass} /></Field><Field label="Beneficios"><input value={product.benefits.join(", ")} onChange={(event) => onChange({ ...product, benefits: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className={controlClass} /></Field><Field label="Tom de voz"><input value={product.voice} onChange={(event) => onChange({ ...product, voice: event.target.value })} className={controlClass} /></Field><Field label="CTA principal"><input value={product.cta} onChange={(event) => onChange({ ...product, cta: event.target.value })} className={controlClass} /></Field><Field label="Link"><input value={product.link} onChange={(event) => onChange({ ...product, link: event.target.value })} className={controlClass} /></Field></div></Panel>;
 }
 
 function Settings() {
-  return <Panel title="Automacao possivel sem prometer API social"><div className="grid gap-3 text-sm leading-6 text-slate-600"><p>Canva nao e obrigatorio agora. O LaunchKit ja gera PNG 1080x1350 no navegador, copia legendas e abre ferramentas externas como atalho.</p><p>Proxima evolucao: rota com OpenAI quando houver OPENAI_API_KEY, upload de prints do app, presets visuais por produto e export ZIP dos cards.</p><div className="flex flex-wrap gap-2 pt-2">{[["Instagram", "https://www.instagram.com/"], ["TikTok", "https://www.tiktok.com/"], ["Canva", "https://www.canva.com/"], ["CapCut", "https://www.capcut.com/"]].map(([name, href]) => <a key={name} href={href} target="_blank" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800">Abrir {name}</a>)}</div></div></Panel>;
+  return <Panel title="Automacao possivel sem prometer API social"><div className="grid gap-3 text-sm font-semibold leading-6 text-slate-600"><p>Canva nao e obrigatorio agora. O LaunchKit ja gera PNG 1080x1350 no navegador, copia legendas e abre ferramentas externas como atalho.</p><p>Proxima evolucao: rota com OpenAI quando houver OPENAI_API_KEY, upload de prints do app, presets visuais por produto e export ZIP dos cards.</p><div className="flex flex-wrap gap-2 pt-2">{[["Instagram", "https://www.instagram.com/"], ["TikTok", "https://www.tiktok.com/"], ["Canva", "https://www.canva.com/"], ["CapCut", "https://www.capcut.com/"]].map(([name, href]) => <a key={name} href={href} target="_blank" className={secondaryButtonClass}>Abrir {name}</a>)}</div></div></Panel>;
 }
