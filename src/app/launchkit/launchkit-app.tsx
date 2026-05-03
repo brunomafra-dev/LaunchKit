@@ -87,10 +87,10 @@ const accentButtonClass = "rounded-md bg-fuchsia-600 px-4 py-2.5 text-sm font-bl
 const secondaryButtonClass = "rounded-md border border-violet-100 bg-white/90 px-4 py-2.5 text-sm font-black text-slate-800 shadow-sm hover:border-fuchsia-200 hover:bg-white";
 
 const themes: Record<ThemeId, { name: string; bg: string; fg: string; muted: string; accent: string; soft: string }> = {
-  clean: { name: "Clean SaaS", bg: "#f8fafc", fg: "#0f172a", muted: "#475569", accent: "#059669", soft: "#d1fae5" },
-  bold: { name: "Bold social", bg: "#111827", fg: "#ffffff", muted: "#d1d5db", accent: "#f59e0b", soft: "#374151" },
-  app: { name: "Print do app", bg: "#eef2ff", fg: "#111827", muted: "#4b5563", accent: "#4f46e5", soft: "#ffffff" },
-  ugc: { name: "UGC simples", bg: "#fff7ed", fg: "#1f2937", muted: "#6b7280", accent: "#ea580c", soft: "#ffedd5" },
+  clean: { name: "Aura lilac", bg: "#f5f3ff", fg: "#111827", muted: "#6d28d9", accent: "#d946ef", soft: "#ffffff" },
+  bold: { name: "Night pop", bg: "#0f1028", fg: "#ffffff", muted: "#c4b5fd", accent: "#f472b6", soft: "#24154f" },
+  app: { name: "Glass app", bg: "#eef2ff", fg: "#172554", muted: "#6366f1", accent: "#7c3aed", soft: "#ffffff" },
+  ugc: { name: "Creator glow", bg: "#fff1f2", fg: "#111827", muted: "#9d174d", accent: "#ec4899", soft: "#fff7ed" },
 };
 
 const initialProducts: Product[] = [
@@ -265,137 +265,145 @@ function roundRect(context: CanvasRenderingContext2D, x: number, y: number, widt
   context.closePath();
 }
 
-function drawPhone(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId], product: Product) {
-  context.fillStyle = "#111827";
-  roundRect(context, 360, 205, 360, 510, 58);
+function fillRoundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number, fill: string | CanvasGradient) {
+  context.fillStyle = fill;
+  roundRect(context, x, y, width, height, radius);
   context.fill();
-  context.fillStyle = theme.soft;
-  roundRect(context, 388, 245, 304, 430, 34);
-  context.fill();
-  context.fillStyle = theme.accent;
-  roundRect(context, 420, 292, 240, 58, 18);
-  context.fill();
-  context.fillStyle = theme.fg;
-  context.font = "800 28px Arial";
-  context.fillText(product.name, 442, 330);
-  context.fillStyle = theme.bg;
-  for (let index = 0; index < 4; index += 1) {
-    roundRect(context, 424, 385 + index * 58, 232, 36, 14);
-    context.fill();
-  }
-  context.strokeStyle = theme.accent;
-  context.lineWidth = 8;
+}
+
+function drawCanvasText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines: number) {
+  wrapText(context, text, maxWidth).slice(0, maxLines).forEach((line, index) => {
+    context.fillText(line, x, y + index * lineHeight);
+  });
+}
+
+function drawOrb(context: CanvasRenderingContext2D, x: number, y: number, radius: number, inner: string, outer: string) {
+  const gradient = context.createRadialGradient(x - radius * 0.25, y - radius * 0.25, radius * 0.1, x, y, radius);
+  gradient.addColorStop(0, inner);
+  gradient.addColorStop(1, outer);
+  context.fillStyle = gradient;
   context.beginPath();
-  context.arc(688, 280, 54, 0, Math.PI * 2);
-  context.stroke();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+}
+
+function loadCanvasImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Nao foi possivel carregar a imagem importada."));
+    image.src = src;
+  });
+}
+
+function drawImageCover(context: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number, radius: number) {
+  const scale = Math.max(width / image.width, height / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = y + (height - drawHeight) / 2;
+  context.save();
+  roundRect(context, x, y, width, height, radius);
+  context.clip();
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  const overlay = context.createLinearGradient(x, y, x + width, y + height);
+  overlay.addColorStop(0, "rgba(15,23,42,0.05)");
+  overlay.addColorStop(1, "rgba(15,23,42,0.46)");
+  context.fillStyle = overlay;
+  context.fillRect(x, y, width, height);
+  context.restore();
+}
+
+function drawPhone(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId], product: Product) {
+  fillRoundRect(context, 620, 170, 270, 520, 54, "#0b1020");
+  fillRoundRect(context, 644, 212, 222, 440, 34, theme.soft);
+  fillRoundRect(context, 668, 252, 174, 58, 18, theme.accent);
+  context.fillStyle = "#ffffff";
+  context.font = "900 25px Arial";
+  context.fillText(product.name, 690, 290);
+  for (let index = 0; index < 4; index += 1) {
+    fillRoundRect(context, 670, 350 + index * 64, 170, 42, 18, index === 0 ? theme.accent : "#eef2ff");
+  }
+  fillRoundRect(context, 548, 438, 210, 90, 26, "rgba(255,255,255,0.78)");
+  context.fillStyle = theme.fg;
+  context.font = "900 28px Arial";
+  context.fillText("app flow", 588, 492);
 }
 
 function drawCharacter(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId], product: Product) {
-  context.fillStyle = theme.accent;
-  context.beginPath();
-  context.arc(520, 360, 92, 0, Math.PI * 2);
-  context.fill();
-  context.fillStyle = "#f8d7b6";
-  context.beginPath();
-  context.arc(520, 318, 58, 0, Math.PI * 2);
-  context.fill();
+  drawOrb(context, 720, 385, 180, theme.accent, "rgba(255,255,255,0.05)");
+  fillRoundRect(context, 540, 260, 350, 260, 42, "rgba(255,255,255,0.78)");
   context.fillStyle = theme.fg;
-  context.beginPath();
-  context.arc(500, 312, 7, 0, Math.PI * 2);
-  context.arc(540, 312, 7, 0, Math.PI * 2);
-  context.fill();
-  context.strokeStyle = theme.fg;
-  context.lineWidth = 6;
-  context.beginPath();
-  context.arc(520, 330, 24, 0.1, Math.PI - 0.1);
-  context.stroke();
-  context.fillStyle = theme.bg;
-  roundRect(context, 610, 250, 280, 130, 28);
-  context.fill();
+  context.font = "900 34px Arial";
+  context.fillText(product.id === "temai" ? "Hoje tem ideia" : "Conta sem drama", 580, 342);
   context.fillStyle = theme.muted;
-  context.font = "700 26px Arial";
-  wrapText(context, product.id === "temai" ? "e agora, o que eu cozinho?" : "quem pagou o que?", 230).forEach((line, index) => context.fillText(line, 635, 302 + index * 34));
+  context.font = "700 24px Arial";
+  drawCanvasText(context, product.benefits[0] ?? "beneficio claro", 580, 392, 250, 32, 2);
+  fillRoundRect(context, 602, 560, 250, 56, 24, theme.accent);
+  context.fillStyle = "#ffffff";
+  context.font = "900 24px Arial";
+  context.fillText("usar agora", 660, 596);
 }
 
 function drawSplit(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId]) {
-  context.fillStyle = theme.bg;
-  roundRect(context, 160, 245, 330, 260, 36);
-  context.fill();
-  context.fillStyle = theme.soft;
-  roundRect(context, 590, 245, 330, 260, 36);
-  context.fill();
+  fillRoundRect(context, 150, 238, 320, 260, 42, "rgba(255,255,255,0.62)");
+  fillRoundRect(context, 610, 238, 320, 260, 42, "rgba(255,255,255,0.9)");
   context.fillStyle = theme.muted;
-  context.font = "800 30px Arial";
-  context.fillText("ANTES", 245, 310);
-  context.fillText("DEPOIS", 668, 310);
+  context.font = "900 26px Arial";
+  context.fillText("ANTES", 198, 304);
+  context.fillText("DEPOIS", 660, 304);
+  for (let index = 0; index < 3; index += 1) {
+    fillRoundRect(context, 198, 350 + index * 46, 205, 24, 12, index === 1 ? theme.accent : "rgba(15,23,42,0.18)");
+    fillRoundRect(context, 660, 350 + index * 46, 205, 24, 12, index === 1 ? theme.accent : "rgba(15,23,42,0.18)");
+  }
   context.strokeStyle = theme.accent;
-  context.lineWidth = 14;
+  context.lineWidth = 16;
+  context.lineCap = "round";
   context.beginPath();
-  context.moveTo(520, 370);
-  context.lineTo(560, 370);
+  context.moveTo(500, 370);
+  context.lineTo(580, 370);
   context.stroke();
   context.fillStyle = theme.accent;
   context.beginPath();
-  context.moveTo(560, 330);
-  context.lineTo(635, 370);
-  context.lineTo(560, 410);
+  context.moveTo(585, 330);
+  context.lineTo(660, 370);
+  context.lineTo(585, 410);
   context.fill();
 }
 
 function drawChecklist(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId]) {
-  context.font = "800 32px Arial";
   for (let index = 0; index < 4; index += 1) {
-    context.fillStyle = theme.bg;
-    roundRect(context, 190, 235 + index * 92, 700, 62, 20);
-    context.fill();
-    context.strokeStyle = theme.accent;
-    context.lineWidth = 8;
+    fillRoundRect(context, 490, 210 + index * 100, 390, 72, 24, "rgba(255,255,255,0.78)");
+    fillRoundRect(context, 520, 230 + index * 100, 34, 34, 13, theme.accent);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 6;
+    context.lineCap = "round";
     context.beginPath();
-    context.moveTo(222, 266 + index * 92);
-    context.lineTo(246, 290 + index * 92);
-    context.lineTo(292, 238 + index * 92);
+    context.moveTo(530, 247 + index * 100);
+    context.lineTo(540, 258 + index * 100);
+    context.lineTo(558, 235 + index * 100);
     context.stroke();
-    context.fillStyle = theme.muted;
-    context.fillText(`Passo ${index + 1}`, 330, 278 + index * 92);
+    context.fillStyle = theme.fg;
+    context.font = "900 24px Arial";
+    context.fillText(`Passo ${index + 1}`, 580, 255 + index * 100);
   }
 }
 
 function drawScene(context: CanvasRenderingContext2D, theme: (typeof themes)[ThemeId], product: Product) {
-  context.fillStyle = theme.bg;
-  roundRect(context, 145, 220, 790, 360, 42);
-  context.fill();
   const labels = product.id === "temai" ? ["foto", "print", "card"] : ["conta", "print", "cta"];
   labels.forEach((label, index) => {
-    context.fillStyle = index === 1 ? theme.accent : theme.soft;
-    roundRect(context, 195 + index * 250, 270, 190, 230, 30);
-    context.fill();
-    context.fillStyle = index === 1 ? "#ffffff" : theme.muted;
-    context.font = "800 30px Arial";
-    context.fillText(label, 245 + index * 250, 398);
+    const x = 475 + index * 150;
+    const y = 230 + (index % 2) * 80;
+    fillRoundRect(context, x, y, 138, 210, 28, index === 1 ? theme.accent : "rgba(255,255,255,0.76)");
+    context.fillStyle = index === 1 ? "#ffffff" : theme.fg;
+    context.font = "900 25px Arial";
+    context.fillText(label, x + 32, y + 118);
   });
 }
 
-function drawSlideToCanvas(canvas: HTMLCanvasElement, slide: CarouselSlide, product: Product, themeId: ThemeId, index: number) {
-  const theme = themes[themeId];
-  const context = canvas.getContext("2d");
-  if (!context) return;
-  canvas.width = 1080;
-  canvas.height = 1350;
-  context.fillStyle = theme.bg;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  context.fillStyle = theme.soft;
-  context.fillRect(70, 84, 940, 1182);
-  context.fillStyle = theme.accent;
-  context.fillRect(70, 84, 18, 1182);
-
-  context.fillStyle = theme.fg;
-  context.font = "800 42px Arial";
-  context.fillText(product.name, 120, 155);
-  context.fillStyle = theme.accent;
-  context.font = "700 30px Arial";
-  context.fillText(`Slide ${index + 1}`, 830, 155);
-
+function drawSlideVisual(context: CanvasRenderingContext2D, slide: CarouselSlide, product: Product, theme: (typeof themes)[ThemeId]) {
+  drawOrb(context, 230, 235, 150, "rgba(255,255,255,0.55)", "rgba(255,255,255,0)");
+  drawOrb(context, 838, 185, 130, theme.accent, "rgba(255,255,255,0)");
   if (slide.visualStyle === "phone") {
     drawPhone(context, theme, product);
   } else if (slide.visualStyle === "split") {
@@ -407,26 +415,71 @@ function drawSlideToCanvas(canvas: HTMLCanvasElement, slide: CarouselSlide, prod
   } else {
     drawCharacter(context, theme, product);
   }
-  context.fillStyle = theme.muted;
-  context.font = "700 26px Arial";
-  wrapText(context, slide.visual, 780).slice(0, 2).forEach((line, lineIndex) => {
-    context.fillText(line, 150, 620 + lineIndex * 36);
-  });
+}
 
-  context.fillStyle = theme.fg;
-  context.font = "900 72px Arial";
-  wrapText(context, slide.title, 830).slice(0, 4).forEach((line, lineIndex) => {
-    context.fillText(line, 120, 700 + lineIndex * 82);
-  });
-  context.fillStyle = theme.muted;
-  context.font = "600 40px Arial";
-  wrapText(context, slide.text, 820).slice(0, 5).forEach((line, lineIndex) => {
-    context.fillText(line, 120, 990 + lineIndex * 54);
-  });
+async function drawSlideToCanvas(canvas: HTMLCanvasElement, slide: CarouselSlide, product: Product, themeId: ThemeId, index: number, assetSrc?: string) {
+  const theme = themes[themeId];
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  canvas.width = 1080;
+  canvas.height = 1350;
 
-  context.fillStyle = theme.accent;
-  context.font = "800 32px Arial";
-  context.fillText("LaunchKit Growth", 120, 1210);
+  const bg = context.createLinearGradient(0, 0, 1080, 1350);
+  bg.addColorStop(0, themeId === "bold" ? "#080817" : theme.bg);
+  bg.addColorStop(0.55, themeId === "clean" ? "#ede9fe" : themeId === "ugc" ? "#ffe4e6" : "#312e81");
+  bg.addColorStop(1, themeId === "bold" ? "#831843" : theme.soft);
+  context.fillStyle = bg;
+  context.fillRect(0, 0, 1080, 1350);
+
+  drawOrb(context, 112, 96, 170, "rgba(255,255,255,0.34)", "rgba(255,255,255,0)");
+  drawOrb(context, 980, 1210, 240, theme.accent, "rgba(255,255,255,0)");
+
+  fillRoundRect(context, 70, 78, 940, 1188, 54, "rgba(255,255,255,0.18)");
+  context.strokeStyle = "rgba(255,255,255,0.42)";
+  context.lineWidth = 2;
+  roundRect(context, 70, 78, 940, 1188, 54);
+  context.stroke();
+
+  fillRoundRect(context, 118, 122, 260, 54, 22, "rgba(255,255,255,0.82)");
+  context.fillStyle = "#111827";
+  context.font = "900 24px Arial";
+  context.fillText(product.name, 148, 158);
+  fillRoundRect(context, 790, 122, 150, 54, 22, "rgba(15,23,42,0.88)");
+  context.fillStyle = "#ffffff";
+  context.font = "900 22px Arial";
+  context.fillText(`${String(index + 1).padStart(2, "0")}/07`, 826, 157);
+
+  if (assetSrc) {
+    try {
+      const image = await loadCanvasImage(assetSrc);
+      drawImageCover(context, image, 118, 216, 844, 380, 42);
+      fillRoundRect(context, 154, 494, 300, 58, 24, "rgba(255,255,255,0.86)");
+      context.fillStyle = "#111827";
+      context.font = "900 24px Arial";
+      context.fillText("visual importado", 190, 532);
+    } catch {
+      drawSlideVisual(context, slide, product, theme);
+    }
+  } else {
+    drawSlideVisual(context, slide, product, theme);
+  }
+
+  fillRoundRect(context, 118, 642, 844, 438, 42, themeId === "bold" ? "rgba(15,23,42,0.72)" : "rgba(255,255,255,0.86)");
+  fillRoundRect(context, 118, 642, 12, 438, 6, theme.accent);
+  context.fillStyle = themeId === "bold" ? "#ffffff" : theme.fg;
+  context.font = "900 74px Arial";
+  drawCanvasText(context, slide.title, 164, 734, 740, 82, 3);
+  context.fillStyle = themeId === "bold" ? "#d8b4fe" : theme.muted;
+  context.font = "700 34px Arial";
+  drawCanvasText(context, slide.text, 164, 1004, 720, 46, 3);
+
+  fillRoundRect(context, 118, 1122, 430, 64, 24, theme.accent);
+  context.fillStyle = "#ffffff";
+  context.font = "900 26px Arial";
+  context.fillText(slide.kind.toUpperCase(), 154, 1162);
+  context.fillStyle = themeId === "bold" ? "#ffffff" : theme.fg;
+  context.font = "900 28px Arial";
+  context.fillText("LaunchKit Growth", 650, 1162);
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -480,8 +533,10 @@ export function LaunchKitApp() {
   const imagePrompts = useMemo(() => promptSlides.map((slide, index) => createImagePrompt(carouselProduct, slide, promptBrief, promptStyle, index)), [promptSlides, carouselProduct, promptBrief, promptStyle]);
 
   useEffect(() => {
-    if (firstSlide && previewCanvas.current) drawSlideToCanvas(previewCanvas.current, firstSlide, carouselProduct, themeId, 0);
-  }, [firstSlide, carouselProduct, themeId]);
+    if (firstSlide && previewCanvas.current) {
+      void drawSlideToCanvas(previewCanvas.current, firstSlide, carouselProduct, themeId, 0, importedAssets[0]?.src);
+    }
+  }, [firstSlide, carouselProduct, themeId, importedAssets]);
 
   const metrics = useMemo(() => ({
     total: library.length,
@@ -523,11 +578,12 @@ export function LaunchKitApp() {
     setActive("Carrossel");
   }
 
-  function exportSlide(index: number) {
+  async function exportSlide(index: number) {
     const slide = slides[index];
     if (!slide) return;
     const canvas = document.createElement("canvas");
-    drawSlideToCanvas(canvas, slide, carouselProduct, themeId, index);
+    const asset = importedAssets.length ? importedAssets[index % importedAssets.length] : undefined;
+    await drawSlideToCanvas(canvas, slide, carouselProduct, themeId, index, asset?.src);
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `${carouselProduct.name.toLowerCase()}-slide-${index + 1}.png`;
@@ -535,7 +591,7 @@ export function LaunchKitApp() {
   }
 
   function exportAllSlides() {
-    slides.forEach((_, index) => window.setTimeout(() => exportSlide(index), index * 180));
+    slides.forEach((_, index) => window.setTimeout(() => void exportSlide(index), index * 180));
   }
 
   function copyPublishPack() {
@@ -1009,14 +1065,26 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
 
 function SlideCard({ slide, product, themeId, index, onExport, onChange }: { slide: CarouselSlide; product: Product; themeId: ThemeId; index: number; onExport: () => void; onChange: (slide: CarouselSlide) => void }) {
   const theme = themes[themeId];
+  const dark = themeId === "bold";
   return (
-    <div className="grid gap-3 rounded-md border border-white/80 bg-white/86 p-3 shadow-xl shadow-slate-950/[0.06] backdrop-blur">
-      <div className="aspect-[4/5] rounded-md p-3 shadow-inner" style={{ background: theme.bg, color: theme.fg }}>
-        <div className="h-full rounded-md p-4 shadow-lg" style={{ background: theme.soft }}>
-          <p className="text-xs font-black uppercase" style={{ color: theme.accent }}>{product.name} / {index + 1}</p>
-          <div className="mt-5 rounded-md border-2 border-dashed bg-white/30 p-3 text-xs font-bold" style={{ borderColor: theme.accent, color: theme.muted }}>{slide.visual}</div>
-          <h4 className="mt-5 text-2xl font-black leading-tight">{slide.title}</h4>
-          <p className="mt-3 text-sm font-semibold leading-relaxed" style={{ color: theme.muted }}>{slide.text}</p>
+    <div className="grid gap-3 rounded-md border border-white/80 bg-white/86 p-3 shadow-xl shadow-violet-950/[0.08] backdrop-blur">
+      <div className="aspect-[4/5] overflow-hidden rounded-md p-3 shadow-inner" style={{ background: `linear-gradient(145deg, ${theme.bg} 0%, ${theme.accent} 118%)`, color: dark ? "#fff" : theme.fg }}>
+        <div className="flex h-full flex-col rounded-md border border-white/35 bg-white/20 p-4 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <span className="rounded-md bg-white/85 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-950">{product.name}</span>
+            <span className="rounded-md bg-slate-950 px-2.5 py-1 text-[10px] font-black text-white">{String(index + 1).padStart(2, "0")}</span>
+          </div>
+          <div className="mt-5 grid flex-1 place-items-center">
+            <div className="relative grid h-32 w-32 place-items-center rounded-full shadow-2xl" style={{ background: theme.accent }}>
+              <div className="absolute -right-5 top-8 h-20 w-14 rounded-[22px] bg-slate-950 shadow-xl" />
+              <div className="absolute -bottom-3 left-3 rounded-md bg-white/90 px-3 py-2 text-[10px] font-black text-slate-950 shadow-lg">{slide.visualStyle ?? "scene"}</div>
+            </div>
+          </div>
+          <div className="rounded-md bg-white/88 p-4 text-slate-950 shadow-xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em]" style={{ color: theme.accent }}>{slide.kind}</p>
+            <h4 className="mt-2 line-clamp-3 text-2xl font-black leading-[1.02]">{slide.title}</h4>
+            <p className="mt-3 line-clamp-3 text-sm font-bold leading-relaxed text-slate-500">{slide.text}</p>
+          </div>
         </div>
       </div>
       <input value={slide.title} onChange={(event) => onChange({ ...slide, title: event.target.value })} className={`${controlClass} min-h-10 font-bold`} />
